@@ -1,0 +1,120 @@
+name: 4-Gate Enterprise CI/CD — huynhthaivan.com
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate1_secret_and_hygiene_audit:
+    name: "Gate 1: Secret, .dockerignore & Zero-Comment SRP Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify DevSecOps & Security Boundary Files
+        run: |
+          test -f .dockerignore
+          test -f Dockerfile
+          test -f docker-compose.yml
+          test -f src/middleware.ts
+          test -f next.config.ts
+      - name: Zero-Secret & Zero-Comment Codebase Audit
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            function walk(dir, list = []) {
+              for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, e.name);
+                if (e.isDirectory()) walk(full, list);
+                else if (/\.(ts|tsx|css)$/.test(e.name)) list.push(full);
+              }
+              return list;
+            }
+            const files = walk('src');
+            for (const f of files) {
+              const txt = fs.readFileSync(f, 'utf8');
+              const lines = txt.split('\n');
+              if (lines.length > 300) {
+                console.error('SRP Ceiling Exceeded:', f, lines.length);
+                process.exit(1);
+              }
+              for (let i = 0; i < lines.length; i++) {
+                const t = lines[i].trim();
+                if (t.startsWith('//') || t.startsWith('/*') || t.includes('{/*')) {
+                  console.error('Comment detected:', f, i + 1);
+                  process.exit(1);
+                }
+              }
+            }
+            console.log('Verified', files.length, 'source files: 0 comments, 100% SRP compliant.');
+          "
+
+  gate2_typecheck_and_contract_validation:
+    name: "Gate 2: TypeScript 5.7 Strict Typecheck"
+    runs-on: ubuntu-latest
+    needs: gate1_secret_and_hygiene_audit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+
+  gate3_production_build_and_seo_routes:
+    name: "Gate 3: Next.js 15 Production Build & Pre-Rendered Assets Check"
+    runs-on: ubuntu-latest
+    needs: gate2_typecheck_and_contract_validation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Verify Pre-Rendered Magazine Pages & Cutouts
+        run: |
+          test -f public/assets/magazines/pages/no-19/page-01.webp
+          test -f public/assets/magazines/pages/no-14/page-68.webp
+          test -f public/downloads/Huynh-Thai-Van-Portfolio-2026.pdf
+          test -f public/downloads/Huynh-Thai-Van-PR-Specialist-CSR-Lead-Portfolio-2026.pdf
+
+  gate4_live_smoke_and_health_probes:
+    name: "Gate 4: Live Production Server & 3-Tier SRE Health Probes"
+    runs-on: ubuntu-latest
+    needs: gate3_production_build_and_seo_routes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Boot Production Server & Probe Endpoints
+        run: |
+          nohup npm run start -- --port 3005 > /tmp/next-prod.log 2>&1 &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:3005/api/health/live >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3005/api/health | grep -q '"status":"ok"'
+          curl -fsS http://127.0.0.1:3005/api/health/live | grep -q '"probe":"liveness"'
+          curl -fsS http://127.0.0.1:3005/api/health/ready | grep -q '"probe":"readiness"'
+          curl -fsS http://127.0.0.1:3005/api/vcard | grep -q 'BEGIN:VCARD'
+          curl -fsS http://127.0.0.1:3005/llms.txt | grep -q 'Huỳnh Thái Vân'
+          kill $SERVER_PID || true

@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    --font-display-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
+    --font-sans-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+    --plaster-bg: #edebe8;
+    --burgundy-bg: #4d0f13;
+    --crimson-accent: #af2a55;
+    --offwhite-bar: #f2efef;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y proximity;
+    background-color: #4d0f13;
+    color: #f5f3f3;
+    font-family: var(--font-sans-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      scroll-snap-type: y mandatory;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+      scroll-snap-type: none;
+    }
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #4d0f13;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display-family);
+}
+
+.font-sans {
+  font-family: var(--font-sans-family);
+}
+
+.apple-tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.slide-surface-plaster {
+  background-color: #edebe8;
+  color: #4d0f13;
+}
+
+.slide-surface-burgundy {
+  background-color: #4d0f13;
+  color: #f5f3f3;
+}
+
+.slide-shadow-plaster {
+  text-shadow: -6px 5px 0px #a6a4a2;
+}
+
+.slide-shadow-plaster-sm {
+  text-shadow: -3px 3px 0px #b5b3b0;
+}
+
+.slide-shadow-plaster-xs {
+  text-shadow: -2px 2px 0px #bebcba;
+}
+
+.slide-shadow-burgundy {
+  text-shadow: -6px 5px 0px #260507;
+}
+
+.apple-liquid-glass-capsule {
+  isolation: isolate;
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+
+.apple-liquid-glass-plaster {
+  background: rgba(237, 235, 232, 0.92);
+  border: 1px solid rgba(77, 15, 19, 0.14);
+  box-shadow:
+    0 10px 26px -6px rgba(77, 15, 19, 0.14),
+    0 2px 8px -2px rgba(77, 15, 19, 0.06);
+}
+
+.apple-liquid-glass-burgundy {
+  background: rgba(44, 7, 10, 0.92);
+  border: 1px solid rgba(242, 239, 239, 0.14);
+  box-shadow:
+    0 12px 30px -6px rgba(15, 2, 3, 0.52),
+    0 2px 10px -2px rgba(15, 2, 3, 0.32);
+}
+
+.apple-liquid-glass-active-pill {
+  background: #af2a55;
+  box-shadow: 0 4px 12px -2px rgba(175, 42, 85, 0.38);
+}
